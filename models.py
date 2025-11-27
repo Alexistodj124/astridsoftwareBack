@@ -89,7 +89,7 @@ class Producto(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
 
-    sku = db.Column(db.String(64), unique=True, nullable=True, index=True)
+    sku = db.Column(db.String(64), nullable=True, index=True)
 
     # 🔹 Tienda (FK) – un producto pertenece a una tienda
     tienda_id = db.Column(
