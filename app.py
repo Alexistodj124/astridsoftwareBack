@@ -493,6 +493,9 @@ def create_app():
             if not producto:
                 return jsonify({"error": f"producto {producto_id} no existe"}), 400
 
+            # Descontar inventario (se permite negativo)
+            producto.cantidad = (producto.cantidad or 0) - cantidad
+
             orden_item = OrdenItem(
                 orden=orden,
                 producto=producto,
@@ -535,8 +538,10 @@ def create_app():
 
         # Reemplazar items si viene "items"
         if "items" in data:
-            # Borramos items actuales
+            # Revertir inventario de los items actuales y borrarlos
             for item in list(orden.items):
+                if item.producto:
+                    item.producto.cantidad = (item.producto.cantidad or 0) + item.cantidad
                 db.session.delete(item)
             db.session.flush()
 
@@ -555,6 +560,9 @@ def create_app():
                 producto = Producto.query.get(producto_id)
                 if not producto:
                     return jsonify({"error": f"producto {producto_id} no existe"}), 400
+
+                # Descontar inventario (se permite negativo)
+                producto.cantidad = (producto.cantidad or 0) - cantidad
 
                 orden_item = OrdenItem(
                     orden=orden,
