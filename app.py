@@ -341,7 +341,6 @@ def create_app():
                     "producto_id": item.producto_id,
                     "cantidad": item.cantidad,
                     "precio_unitario": float(item.precio_unitario),
-
                     # 🔹 info básica del producto (sin meter objetos crudos)
                     "producto": {
                         "id": item.producto.id,
@@ -351,6 +350,7 @@ def create_app():
                         "categoria": item.producto.categoria.nombre if item.producto.categoria else None,
                         "talla_id": item.producto.talla_id,
                         "talla": item.producto.talla.nombre if item.producto.talla else None,
+                        "costo": float(item.producto.costo) if item.producto and item.producto.costo is not None else None,
                     } if item.producto else None,
                 }
                 for item in orden.items
