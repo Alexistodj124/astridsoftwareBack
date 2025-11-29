@@ -324,12 +324,17 @@ def create_app():
             value = value[:-1] + "+00:00"
         return datetime.fromisoformat(value)
 
+    def calcular_subtotal_items(items):
+        return sum((item.cantidad or 0) * (item.precio_unitario or 0) for item in items)
+
     # Helper para serializar una orden completa
     def orden_to_dict(orden: Orden):
         return {
             "id": orden.id,
             "codigo": orden.codigo,
             "fecha": orden.fecha.isoformat(),
+            "descuento": float(orden.descuento) if orden.descuento is not None else 0,
+            "total": float(orden.total) if orden.total is not None else 0,
             "cliente": {
                 "id": orden.cliente.id,
                 "nombre": orden.cliente.nombre,
@@ -478,6 +483,7 @@ def create_app():
         if not items_data:
             return jsonify({"error": "debe incluir al menos un item en 'items'"}), 400
 
+        subtotal = 0
         for item_data in items_data:
             cantidad = item_data.get("cantidad", 1)
             precio_unitario = item_data.get("precio_unitario")
@@ -495,6 +501,7 @@ def create_app():
 
             # Descontar inventario (se permite negativo)
             producto.cantidad = (producto.cantidad or 0) - cantidad
+            subtotal += cantidad * precio_unitario
 
             orden_item = OrdenItem(
                 orden=orden,
@@ -503,6 +510,11 @@ def create_app():
                 precio_unitario=precio_unitario,
             )
             db.session.add(orden_item)
+
+        descuento_val = data.get("descuento", 0) or 0
+        total_val = data.get("total")
+        orden.descuento = descuento_val
+        orden.total = total_val if total_val is not None else subtotal - float(descuento_val)
 
         db.session.commit()
 
@@ -523,6 +535,8 @@ def create_app():
         orden = Orden.query.get_or_404(orden_id)
         data = request.get_json()
 
+        descuento_val = orden.descuento if orden.descuento is not None else 0
+
         if "codigo" in data:
             orden.codigo = data["codigo"]
 
@@ -536,6 +550,12 @@ def create_app():
                 return jsonify({"error": "cliente_id no válido"}), 400
             orden.cliente = cliente
 
+        if "descuento" in data:
+            descuento_val = data.get("descuento", 0) or 0
+            orden.descuento = descuento_val
+
+        total_payload = data.get("total") if "total" in data else None
+
         # Reemplazar items si viene "items"
         if "items" in data:
             # Revertir inventario de los items actuales y borrarlos
@@ -546,6 +566,7 @@ def create_app():
             db.session.flush()
 
             items_data = data["items"]
+            subtotal = 0
             for item_data in items_data:
                 cantidad = item_data.get("cantidad", 1)
                 precio_unitario = item_data.get("precio_unitario")
@@ -563,6 +584,7 @@ def create_app():
 
                 # Descontar inventario (se permite negativo)
                 producto.cantidad = (producto.cantidad or 0) - cantidad
+                subtotal += cantidad * precio_unitario
 
                 orden_item = OrdenItem(
                     orden=orden,
@@ -571,6 +593,14 @@ def create_app():
                     precio_unitario=precio_unitario,
                 )
                 db.session.add(orden_item)
+
+            orden.total = total_payload if total_payload is not None else subtotal - float(descuento_val)
+        else:
+            if "total" in data:
+                orden.total = total_payload
+            elif "descuento" in data:
+                subtotal_actual = calcular_subtotal_items(orden.items)
+                orden.total = subtotal_actual - float(descuento_val)
 
         db.session.commit()
         return jsonify(orden_to_dict(orden))
