@@ -12,6 +12,8 @@ class Cliente(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.String(120), nullable=False)
     telefono = db.Column(db.String(30), nullable=False)
+    email = db.Column(db.String(255), nullable=True)
+    nit = db.Column(db.String(50), nullable=True)
 
     # Una clienta puede tener muchas órdenes
     ordenes = db.relationship("Orden", back_populates="cliente")

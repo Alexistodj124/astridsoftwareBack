@@ -339,6 +339,8 @@ def create_app():
                 "id": orden.cliente.id,
                 "nombre": orden.cliente.nombre,
                 "telefono": orden.cliente.telefono,
+                "email": orden.cliente.email,
+                "nit": orden.cliente.nit,
             },
             "items": [
                 {
@@ -453,13 +455,20 @@ def create_app():
             # Buscamos por telefono (y/o nombre). Si no existe, lo creamos.
             nombre = cliente_data.get("nombre")
             telefono = cliente_data.get("telefono")
+            email = cliente_data.get("email")
+            nit = cliente_data.get("nit")
 
             if not nombre or not telefono:
                 return jsonify({"error": "cliente requiere nombre y telefono"}), 400
 
             cliente = Cliente.query.filter_by(telefono=telefono).first()
             if not cliente:
-                cliente = Cliente(nombre=nombre, telefono=telefono)
+                cliente = Cliente(
+                    nombre=nombre.strip(),
+                    telefono=telefono.strip(),
+                    email=email.strip() if isinstance(email, str) else email,
+                    nit=nit.strip() if isinstance(nit, str) else nit,
+                )
                 db.session.add(cliente)
 
         # 2) Orden
@@ -924,6 +933,8 @@ def create_app():
                 "id": c.id,
                 "nombre": c.nombre,
                 "telefono": c.telefono,
+                "email": c.email,
+                "nit": c.nit,
             }
             for c in clientes
         ]), 200
@@ -939,6 +950,8 @@ def create_app():
             "id": cliente.id,
             "nombre": cliente.nombre,
             "telefono": cliente.telefono,
+            "email": cliente.email,
+            "nit": cliente.nit,
         }), 200
 
 
@@ -949,13 +962,17 @@ def create_app():
         Body JSON:
         {
         "nombre": "Ana López",
-        "telefono": "+502 5555 1111"
+        "telefono": "+502 5555 1111",
+        "email": "ana@example.com",   // opcional
+        "nit": "123456-7"             // opcional
         }
         """
         data = request.get_json() or {}
 
         nombre = data.get("nombre")
         telefono = data.get("telefono")
+        email = data.get("email")
+        nit = data.get("nit")
 
         if not nombre or not telefono:
             return jsonify({"error": "nombre y telefono son obligatorios"}), 400
@@ -963,6 +980,8 @@ def create_app():
         nuevo = Cliente(
             nombre=nombre.strip(),
             telefono=telefono.strip(),
+            email=email.strip() if isinstance(email, str) else email,
+            nit=nit.strip() if isinstance(nit, str) else nit,
         )
         db.session.add(nuevo)
         db.session.commit()
@@ -971,6 +990,8 @@ def create_app():
             "id": nuevo.id,
             "nombre": nuevo.nombre,
             "telefono": nuevo.telefono,
+            "email": nuevo.email,
+            "nit": nuevo.nit,
         }), 201
 
 
@@ -981,7 +1002,9 @@ def create_app():
         Body JSON (campos opcionales):
         {
         "nombre": "Nuevo nombre",
-        "telefono": "Nuevo teléfono"
+        "telefono": "Nuevo teléfono",
+        "email": "nuevo@example.com",
+        "nit": "987654-3"
         }
         """
         cliente = Cliente.query.get_or_404(cliente_id)
@@ -989,6 +1012,8 @@ def create_app():
 
         nombre = data.get("nombre")
         telefono = data.get("telefono")
+        email = data.get("email")
+        nit = data.get("nit")
 
         if nombre is not None:
             cliente.nombre = nombre.strip()
@@ -996,12 +1021,20 @@ def create_app():
         if telefono is not None:
             cliente.telefono = telefono.strip()
 
+        if email is not None:
+            cliente.email = email.strip() if isinstance(email, str) else email
+
+        if nit is not None:
+            cliente.nit = nit.strip() if isinstance(nit, str) else nit
+
         db.session.commit()
 
         return jsonify({
             "id": cliente.id,
             "nombre": cliente.nombre,
             "telefono": cliente.telefono,
+            "email": cliente.email,
+            "nit": cliente.nit,
         }), 200
 
 
