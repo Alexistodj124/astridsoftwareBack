@@ -353,6 +353,8 @@ def create_app():
                         "id": item.producto.id,
                         "descripcion": item.producto.descripcion,
                         "sku": item.producto.sku,
+                        "tienda_id": item.producto.tienda_id,
+                        "tienda": item.producto.tienda.nombre if item.producto.tienda else None,
                         "marca": item.producto.marca.nombre if item.producto.marca else None,
                         "categoria": item.producto.categoria.nombre if item.producto.categoria else None,
                         "talla_id": item.producto.talla_id,
